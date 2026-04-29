@@ -1,0 +1,45 @@
+name: 🚀 Build Godot 4 for Legacy E-350
+on:
+  workflow_dispatch: # Allows you to start the build manually from the Actions tab
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Clone Repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential scons pkg-config libx11-dev libxcursor-dev \
+            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev \
+            libdbus-1-dev libudev-dev libxi-dev libxrandr-dev
+
+      - name: ⚙️ Setup Python & SCons
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: 🔨 Compiling Godot (btver1 / x86-64-v1)
+        run: |
+          # march=btver1 is specific to your AMD E-350
+          # We disable 'precision=double' to save FPU cycles on your machine
+          # target=editor builds the full IDE
+          scons platform=linuxbsd target=editor arch=x86_64 \
+            optimize=speed \
+            custom_cflags="-march=btver1 -mtune=btver1 -O3 -pipe" \
+            module_mono_enabled=no \
+            builtin_vulkan=yes \
+            -j$(nproc)
+
+      - name: 📦 Strip Binary
+        run: |
+          # Reduce file size significantly by removing debug symbols
+          strip bin/godot.linuxbsd.editor.x86_64
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Godot4-E350-Optimized
+          path: bin/godot.linuxbsd.editor.x86_64
