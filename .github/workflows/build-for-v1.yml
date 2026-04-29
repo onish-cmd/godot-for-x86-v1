@@ -1,6 +1,7 @@
 name: 🚀 Build Godot 4 for Legacy E-350
 on:
   workflow_dispatch: # Allows you to start the build manually from the Actions tab
+  push:
 
 jobs:
   build-linux:
